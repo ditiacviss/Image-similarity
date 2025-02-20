@@ -50,7 +50,7 @@ def predict_similarity(model, img1, img2):
         return None
 
     similarity = model.predict([img1, img2])[0][0]
-    return 1 if similarity > 0.5 else 0, similarity
+    return 1 if similarity > 0.45 else 0, similarity
 
 
 json_path = "model/siamese_model.json"
