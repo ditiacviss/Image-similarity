@@ -51,7 +51,7 @@ def predict_similarity(model, img1, img2):
 
     similarity_score = model.predict([img1, img2])[0][0]
     st.write('Similarity Score:', similarity_score)
-    return 1 if similarity_score > 0.5 else 0, similarity_score
+    return 1 if similarity_score > 0.35 else 0, similarity_score
 
 
 json_path = "model/siamese_model.json"
