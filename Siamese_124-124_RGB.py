@@ -73,6 +73,7 @@ if st.button("Start Processing"):
     if processed_img1 is None or processed_img2 is None:
         st.error("Please upload both images before processing.")
     else:
+        model = load_siamese_model(json_path, weights_path)
         predicted_label, similarity_score = predict_similarity(model, processed_img1, processed_img2)
 
         if predicted_label is not None:
