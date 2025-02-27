@@ -1,10 +1,8 @@
 import numpy as np
-import streamlit as st
-import tempfile
-import os
 from tensorflow.keras.preprocessing.image import load_img, img_to_array
 from tensorflow.keras.models import load_model
 from tensorflow.keras import backend as K
+import os
 
 # Define cosine distance function
 def cosine_distance(vectors):
@@ -13,50 +11,39 @@ def cosine_distance(vectors):
     y = K.l2_normalize(y, axis=1)
     return -K.sum(x * y, axis=1, keepdims=True)
 
-# Function to preprocess uploaded images
-def preprocess_image(uploaded_file, target_size=(224, 224)):
-    if uploaded_file is not None:
-        with tempfile.NamedTemporaryFile(delete=False) as temp_file:
-            temp_file.write(uploaded_file.read())
-            temp_path = temp_file.name
-
-        img = load_img(temp_path, target_size=target_size, color_mode='grayscale')
+def preprocess_image(image_path, target_size=(224, 224)):
+    try:
+        if not os.path.exists(image_path):
+            raise FileNotFoundError(f"File not found: {image_path}")
+        img = load_img(image_path, target_size=target_size, color_mode='grayscale')
         img = img_to_array(img) / 255.0
-        img = np.expand_dims(img, axis=0)
-
+        img = np.expand_dims(img, axis=0)  # Add batch dimension
         return img
-    return None
+    except Exception as e:
+        return None
 
-# Load model only if uploaded
-st.title("Siamese Network Image Similarity")
+def predict(model, imgage_pair):
 
-uploaded_model = st.file_uploader("Upload Trained Model (.h5)", type=["h5"])
+    prediction = model.predict(imgage_pair)
+    similarity = prediction[0][0]
+    print(similarity)
+    return 1 if similarity > 0.3 else 0  # 1 for dissimilar, 0 for similar
 
-if uploaded_model:
-    with tempfile.NamedTemporaryFile(delete=False, suffix=".h5") as temp_model:
-        temp_model.write(uploaded_model.read())
-        model_path = temp_model.name
 
-    siamese_model = load_model(model_path, custom_objects={'cosine_distance': cosine_distance})
-    st.success("Model loaded successfully!")
+siamese_model = load_model(
+    'model/siamese_model_19Feb.h5',
+    custom_objects={'cosine_distance': cosine_distance}
+)
 
-# Upload images
-img1 = st.file_uploader("Upload Image 1", type=["jpg", "png", "jpeg"])
-img2 = st.file_uploader("Upload Image 2", type=["jpg", "png", "jpeg"])
+img1_path = input('Enter the path for Image 1: ').strip()
+img2_path = input('Enter the path for Image 2: ').strip()
 
-# Predict similarity when the button is clicked
-if st.button("Start Processing"):
-    if "siamese_model" not in locals():
-        st.error("Please upload a model before processing.")
-    else:
-        processed_img1 = preprocess_image(img1)
-        processed_img2 = preprocess_image(img2)
+img1_pre = preprocess_image(img1_path)
+img2_pre = preprocess_image(img2_path)
 
-        if processed_img1 is None or processed_img2 is None:
-            st.error("Please upload both images before processing.")
-        else:
-            prediction = siamese_model.predict([processed_img1, processed_img2])
-            similarity = prediction[0][0]
+image_pair = (img1_pre, img2_pre)
 
-            st.write("Similarity Score:", similarity)
-            st.write(f"Prediction: {'Dissimilar' if similarity > 0.5 else 'Similar'}")
+predicted_label = predict(siamese_model, image_pair)
+
+if predicted_label is not None:
+    print(f"Prediction: {'Dissimilar' if predicted_label == 1 else 'Similar'}")
